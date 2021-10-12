@@ -7,8 +7,8 @@ import Typography from '@mui/material/Typography';
 import loadBlockchainData from './Funcs';
 
 function App() {
-  let [pools, set_pools] = useState()
-  let callfunc_loadBlockchainData = async () => set_pools(await loadBlockchainData())
+  const [pools, set_pools] = useState()
+  const callfunc_loadBlockchainData = async () => set_pools(await loadBlockchainData())
 
   useEffect(() => {
     callfunc_loadBlockchainData()

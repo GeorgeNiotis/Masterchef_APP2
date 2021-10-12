@@ -6,8 +6,8 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 
-function SymbolsArray(props) {// or props.title
-    function table_fn() {
+const SymbolsArrayComp = (props) => {// or props.title
+    const tableFn = () => {
         if (props.array === undefined) {
             return <TableRow key={0}>
                 <TableCell>Loading...</TableCell>
@@ -15,12 +15,12 @@ function SymbolsArray(props) {// or props.title
         } else {
             return props.array[2].map((pool, i) => (
                 <TableRow
-                    key={pool.LP_address}
+                    key={pool.LPAddress}
                 >
                     <TableCell>{i}</TableCell>
-                    <TableCell component='th' >{pool.LP_address}</TableCell>
-                    <TableCell align='center'>{pool.token0_symbol}</TableCell>
-                    <TableCell align='center'>{pool.token1_symbol}</TableCell>
+                    <TableCell component='th' >{pool.LPAddress}</TableCell>
+                    <TableCell align='center'>{pool.token0Symbol}</TableCell>
+                    <TableCell align='center'>{pool.token1Symbol}</TableCell>
 
                 </TableRow>
             ))
@@ -34,13 +34,13 @@ function SymbolsArray(props) {// or props.title
                     <TableHead>
                         <TableRow>
                             <TableCell>#</TableCell>
-                            <TableCell>lpToken_address</TableCell>
-                            <TableCell align='center'>token0_symbol</TableCell>
-                            <TableCell align='center'>token1_symbol</TableCell>
+                            <TableCell>lpTokenAddress</TableCell>
+                            <TableCell align='center'>token0Symbol</TableCell>
+                            <TableCell align='center'>token1Symbol</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {table_fn()}
+                        {tableFn()}
                     </TableBody>
                 </Table>
             </TableContainer>
@@ -48,8 +48,8 @@ function SymbolsArray(props) {// or props.title
     )
 }
 
-SymbolsArray.defaultProps = {
-    title: 'Default SymbolsArray component!'
+SymbolsArrayComp.defaultProps = {
+    title: 'Default SymbolsArrayComp component!'
 }
 
-export default SymbolsArray
+export default SymbolsArrayComp

@@ -1,5 +1,5 @@
-export const masterChef_address = '0x73feaa1eE314F8c655E354234017bE2193C9E24E'
-export const masterChef_ABI = [
+export const masterChefAddress = '0x73feaa1eE314F8c655E354234017bE2193C9E24E'
+export const masterChefABI = [
     {
         'inputs': [
             {
@@ -580,7 +580,7 @@ export const masterChef_ABI = [
         'type': 'function'
     }
 ]
-export const ERC_20_ABI=[
+export const ERC20ABI=[
     {
         'constant': true,
         'inputs': [],
@@ -802,7 +802,7 @@ export const ERC_20_ABI=[
         'type': 'event'
     }
 ]
-export const stake_token_LP_ABI=[
+export const stakeTokenLPABI=[
     {
         'inputs': [],
         'payable': false,

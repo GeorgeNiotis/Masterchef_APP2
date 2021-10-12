@@ -6,21 +6,19 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 
-function ActivePools(props) {// or props.title
-
-
-    function table_fn() {
+const ActivePoolsComp = (props) => {// or props.title
+    const tableFn = () => {
         if (props.array === undefined) {
             return <TableRow key={0}>
                 <TableCell>Loading...</TableCell>
             </TableRow>
         } else {
             return props.array[1].map((pool, i) => (
-                <TableRow key={pool.lpToken_address}>
+                <TableRow key={pool.lpTokenAddress}>
                     <TableCell>{i}</TableCell>
-                    <TableCell component='th' >{pool.lpToken_address}</TableCell>
+                    <TableCell component='th' >{pool.lpTokenAddress}</TableCell>
                     <TableCell align='center'>{pool.reward}</TableCell>
-                    <TableCell align='center'>{pool.reward_per_block_percent}%</TableCell>
+                    <TableCell align='center'>{pool.rewardPerBlockPercent}%</TableCell>
                 </TableRow>
             ))
         }
@@ -33,13 +31,13 @@ function ActivePools(props) {// or props.title
                     <TableHead>
                         <TableRow>
                             <TableCell>#</TableCell>
-                            <TableCell>lpToken_address</TableCell>
+                            <TableCell>lpTokenAddress</TableCell>
                             <TableCell align='center'>reward</TableCell>
                             <TableCell align='center'>reward_per_block%</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {table_fn()}
+                        {tableFn()}
                     </TableBody>
                 </Table>
             </TableContainer>
@@ -47,8 +45,8 @@ function ActivePools(props) {// or props.title
     )
 }
 
-ActivePools.defaultProps = {
-    title: 'Default ActivePools component!'
+ActivePoolsComp.defaultProps = {
+    title: 'Default ActivePoolsComp component!'
 }
 
-export default ActivePools
+export default ActivePoolsComp

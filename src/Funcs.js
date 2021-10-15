@@ -1,5 +1,6 @@
 import web3 from 'web3';
 import AsyncRetry from 'async-retry';
+
 import {
   masterChefABI,
   masterChefAddress,
@@ -128,6 +129,54 @@ const tokenSymbols = async (Web3, activePoolsArray, LPContractsArray) => {
   return symbolsArray
 }
 
+const coinGecko = async (symbolsArray) => {
+  const url = new URL('https://api.coingecko.com/api/v3/coins/list')
+  const url2=new URL('https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd&ids=pancakeswap-token,wbnb')
+  var addressesString = ''
+  // console.log(url.searchParams.get('contract_addresses'))
+  // url.searchParams.set('contract_addresses',
+  //   '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82,0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c,0x3EE2200Efb3400fAbB9AacF31297cBdD1d435D47'
+  // )
+  // symbolsArray.slice(0, 10).map((symbols) => {
+  //   if (symbols.token0Address === undefined) {
+  //     return false
+  //   } else {
+  //     addressesString = addressesString + ',' + symbols.token0Address
+  //   }
+  // })
+  // console.log(url2.searchParams.get('ids'))
+  // const fetchResponsePromise2 = await fetch(url2)
+  // const data2 = JSON.parse(await fetchResponsePromise2.text())
+
+  const fetchResponsePromise = await fetch(url)
+  const list = JSON.parse(await fetchResponsePromise.text())
+  // get the id for the coresponding symbol
+  symbolsArray.map((symbol,mapIndex) => {
+    if (symbol.token0Address === undefined) {
+      return false
+    }
+    symbol.token0Symbol = symbol.token0Symbol.toLowerCase()
+    symbol.token1Symbol = symbol.token1Symbol.toLowerCase()
+    symbolsArray[mapIndex].symbol0Id=undefined
+    symbolsArray[mapIndex].symbol1Id=undefined
+    for (let index = 0; index < list.length; index++) {
+      if (list[index].symbol === symbol.token0Symbol) {
+        symbolsArray[mapIndex].symbol0Id=list[index].id
+      }
+      if (list[index].symbol === symbol.token1Symbol) {
+        symbolsArray[mapIndex].symbol1Id=list[index].id
+      }
+      if ((symbolsArray[mapIndex].symbol0Id!==undefined)&&(symbolsArray[mapIndex].symbol1Id!==undefined)) {
+        break
+      }
+    }
+    return null
+  })
+  console.log(symbolsArray)
+  // console.log(data2)
+
+}
+
 const loadBlockchainData = async () => {
   const Web3 = new web3('https://bsc-dataseed.binance.org/');
   const MasterChefContract = new Web3.eth.Contract(masterChefABI, masterChefAddress)
@@ -144,6 +193,7 @@ const loadBlockchainData = async () => {
 
   }
   const symbolsArray = await tokenSymbols(Web3, activePoolsArray, LPContractsArray)
+  coinGecko(symbolsArray)
   return [poolLength, activePoolsArray, symbolsArray]
 }
 

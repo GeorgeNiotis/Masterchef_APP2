@@ -129,7 +129,7 @@ const tokenSymbols = async (Web3, activePoolsArray, LPContractsArray) => {
   return symbolsArray
 }
 
-const coinGecko = async (symbolsArray) => {
+const coinGecko = async (symbolsArray,LPContractsArray) => {
   const url = new URL('https://api.coingecko.com/api/v3/coins/list')
   const url2=new URL('https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd&ids=pancakeswap-token,wbnb')
   var addressesString = ''
@@ -147,7 +147,8 @@ const coinGecko = async (symbolsArray) => {
   // console.log(url2.searchParams.get('ids'))
   // const fetchResponsePromise2 = await fetch(url2)
   // const data2 = JSON.parse(await fetchResponsePromise2.text())
-
+  const testing =await LPContractsArray[3].methods.getReserves().call()
+  console.log(testing)
   const fetchResponsePromise = await fetch(url)
   const list = JSON.parse(await fetchResponsePromise.text())
   // get the id for the coresponding symbol
@@ -193,7 +194,7 @@ const loadBlockchainData = async () => {
 
   }
   const symbolsArray = await tokenSymbols(Web3, activePoolsArray, LPContractsArray)
-  coinGecko(symbolsArray)
+  coinGecko(symbolsArray,LPContractsArray)
   return [poolLength, activePoolsArray, symbolsArray]
 }
 

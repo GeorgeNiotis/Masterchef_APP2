@@ -166,8 +166,14 @@ const coinGecko = async (symbolsArray) => {
     if (obj.token0Address === undefined) {
       return false
     }
-    obj.token0Price = idPriceData[obj.symbol0Id]
-    obj.token1Price = idPriceData[obj.symbol1Id]
+    if(idPriceData[obj.symbol0Id]!==undefined){
+      obj.token0Price = Object.values(idPriceData[obj.symbol0Id])[0]
+    }
+    if(idPriceData[obj.symbol1Id]!==undefined){
+      obj.token1Price = Object.values(idPriceData[obj.symbol1Id])[0]
+    }
+    // obj.token0Price = idPriceData[obj.symbol0Id]
+    // obj.token1Price = idPriceData[obj.symbol1Id]
   })
 }
 
@@ -208,7 +214,10 @@ const calcTVL = async (symbolsArray, LPContractsArray) => {
     if (obj.token0Address === undefined) {
       return false
     }
-    obj.tvl=obj.token0Price
+    obj.tvl=((obj.reserve0 * obj.token0Price) + (obj.reserve1 * obj.token1Price)) / obj.totalSupply
+    if (isNaN(obj.tvl)) {
+      obj.tvl=undefined
+    }
   })
 }
 
@@ -230,7 +239,7 @@ const loadBlockchainData = async () => {
   const symbolsArray = await tokenSymbols(Web3, activePoolsArray, LPContractsArray)
   await coinGecko(symbolsArray, LPContractsArray)
   await calcTVL(symbolsArray, LPContractsArray)
-
+  console.log(activePoolsArray)
   console.log(symbolsArray)
   return [poolLength, activePoolsArray, symbolsArray]
 }

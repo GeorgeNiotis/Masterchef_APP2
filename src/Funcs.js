@@ -99,8 +99,10 @@ const tokenSymbols = async (Web3, activePoolsArray, LPContractsArray) => {
   })
 
   const batcher2 = () => new Promise(resolve => {
+    countCallbacks = 0
     symbolsArray.map((symbol, i) => {
       if (symbol.token0Address === undefined) {
+        countCallbacks=countCallbacks+NumOfBatches
         return false
       }
       symbol.token0Contract = new Web3.eth.Contract(ERC20ABI, symbol.token0Address)
@@ -115,7 +117,6 @@ const tokenSymbols = async (Web3, activePoolsArray, LPContractsArray) => {
       batch2.add(symbol.token1Contract.methods.symbol().call.request({ from: symbol.token1Address }, (error, result) => {
         countCallbacks++
         symbol.token1Symbol = result
-        resolve()
         if ((activePoolsArray.length * NumOfBatches) === countCallbacks) {
           resolve()
         }
@@ -129,53 +130,86 @@ const tokenSymbols = async (Web3, activePoolsArray, LPContractsArray) => {
   return symbolsArray
 }
 
-const coinGecko = async (symbolsArray,LPContractsArray) => {
+const coinGecko = async (symbolsArray) => {
   const url = new URL('https://api.coingecko.com/api/v3/coins/list')
-  const url2=new URL('https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd&ids=pancakeswap-token,wbnb')
-  var addressesString = ''
-  // console.log(url.searchParams.get('contract_addresses'))
-  // url.searchParams.set('contract_addresses',
-  //   '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82,0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c,0x3EE2200Efb3400fAbB9AacF31297cBdD1d435D47'
-  // )
-  // symbolsArray.slice(0, 10).map((symbols) => {
-  //   if (symbols.token0Address === undefined) {
-  //     return false
-  //   } else {
-  //     addressesString = addressesString + ',' + symbols.token0Address
-  //   }
-  // })
-  // console.log(url2.searchParams.get('ids'))
-  // const fetchResponsePromise2 = await fetch(url2)
-  // const data2 = JSON.parse(await fetchResponsePromise2.text())
-  const testing =await LPContractsArray[3].methods.getReserves().call()
-  console.log(testing)
+  const url2 = new URL('https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd&ids=<id1>,<id2>')
   const fetchResponsePromise = await fetch(url)
   const list = JSON.parse(await fetchResponsePromise.text())
-  // get the id for the coresponding symbol
-  symbolsArray.map((symbol,mapIndex) => {
+  var idsString = ''
+
+  symbolsArray.map((symbol, mapIndex) => {
     if (symbol.token0Address === undefined) {
       return false
     }
     symbol.token0Symbol = symbol.token0Symbol.toLowerCase()
     symbol.token1Symbol = symbol.token1Symbol.toLowerCase()
-    symbolsArray[mapIndex].symbol0Id=undefined
-    symbolsArray[mapIndex].symbol1Id=undefined
     for (let index = 0; index < list.length; index++) {
       if (list[index].symbol === symbol.token0Symbol) {
-        symbolsArray[mapIndex].symbol0Id=list[index].id
+        symbolsArray[mapIndex].symbol0Id = list[index].id
+        idsString = idsString + ',' + list[index].id
+      } else if (list[index].symbol === symbol.token1Symbol) {
+        symbolsArray[mapIndex].symbol1Id = list[index].id
+        idsString = idsString + ',' + list[index].id
       }
-      if (list[index].symbol === symbol.token1Symbol) {
-        symbolsArray[mapIndex].symbol1Id=list[index].id
-      }
-      if ((symbolsArray[mapIndex].symbol0Id!==undefined)&&(symbolsArray[mapIndex].symbol1Id!==undefined)) {
+      if ((symbolsArray[mapIndex].symbol0Id !== undefined) && (symbolsArray[mapIndex].symbol1Id !== undefined)) {
         break
       }
     }
     return null
   })
-  console.log(symbolsArray)
-  // console.log(data2)
 
+  url2.searchParams.set('ids', idsString)
+  const fetchResponsePromise2 = await fetch(url2)
+  const idPriceData = JSON.parse(await fetchResponsePromise2.text())
+
+  symbolsArray.map((obj,index) => {
+    if (obj.token0Address === undefined) {
+      return false
+    }
+    obj.token0Price = idPriceData[obj.symbol0Id]
+    obj.token1Price = idPriceData[obj.symbol1Id]
+  })
+}
+
+const calcTVL = async (symbolsArray, LPContractsArray) => {
+  const Web3 = new web3('https://bsc-dataseed.binance.org/');
+  const batch = new Web3.BatchRequest()
+  let countCallbacks = 0
+  const NumOfBatches=2
+
+  const batcher = () => new Promise(resolve => {
+    symbolsArray.map((symbol,index) => {
+      if (symbol.token0Address === undefined) {
+        countCallbacks=countCallbacks+NumOfBatches
+        return false
+      }
+      batch.add(LPContractsArray[index].methods.getReserves().call.request({ from: symbol.LPAddress }, (error, result) => {
+        countCallbacks++
+        symbol.reserve0=result[0]
+        symbol.reserve1=result[1]
+        if (countCallbacks === (symbolsArray.length * NumOfBatches)) {
+          resolve()
+        }
+      }))
+      batch.add(LPContractsArray[index].methods.totalSupply().call.request({ from: symbol.LPAddress }, (error, result) => {
+        countCallbacks++
+        symbol.totalSupply=result
+        if (countCallbacks === (symbolsArray.length*NumOfBatches)) {
+          resolve()
+        }
+      }))
+    })
+    batch.execute();
+  })
+
+  await batcher()
+
+  symbolsArray.map((obj,index)=>{
+    if (obj.token0Address === undefined) {
+      return false
+    }
+    obj.tvl=obj.token0Price
+  })
 }
 
 const loadBlockchainData = async () => {
@@ -194,7 +228,10 @@ const loadBlockchainData = async () => {
 
   }
   const symbolsArray = await tokenSymbols(Web3, activePoolsArray, LPContractsArray)
-  coinGecko(symbolsArray,LPContractsArray)
+  await coinGecko(symbolsArray, LPContractsArray)
+  await calcTVL(symbolsArray, LPContractsArray)
+
+  console.log(symbolsArray)
   return [poolLength, activePoolsArray, symbolsArray]
 }
 

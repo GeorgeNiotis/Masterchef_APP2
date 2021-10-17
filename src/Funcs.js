@@ -1,11 +1,11 @@
 import web3 from 'web3';
 import AsyncRetry from 'async-retry';
-
 import {
   masterChefABI,
   masterChefAddress,
   stakeTokenLPABI, ERC20ABI
 } from './config.js';
+const BLOCKS_PER_YEAR = 31556926 / 3
 
 const activePools = async () => {
   const Web3 = new web3('https://bsc-dataseed.binance.org/');
@@ -31,7 +31,8 @@ const activePools = async () => {
           const obj = {
             result: result,
             allocPoint: result['allocPoint'],
-            lpTokenAddress: result['lpToken']
+            lpTokenAddress: result['lpToken'],
+            pid: i
           }
           activePoolsArray.push(obj)
         }
@@ -51,7 +52,7 @@ const activePools = async () => {
         pool.cakePerBlock = web3.utils.fromWei(result);
         pool.totalAllocPoint = totalAllocPoint
         pool.rewardPerBlockPercent = Math.round((pool.allocPoint / totalAllocPoint) * 100)
-        pool.reward = pool.cakePerBlock * (pool.allocPoint / totalAllocPoint);
+        pool.rewardPerBlock = pool.cakePerBlock * (pool.allocPoint / totalAllocPoint);
         if (countCallbacks === activePoolsArray.length) {
           resolve()
         }
@@ -102,7 +103,7 @@ const tokenSymbols = async (Web3, activePoolsArray, LPContractsArray) => {
     countCallbacks = 0
     symbolsArray.map((symbol, i) => {
       if (symbol.token0Address === undefined) {
-        countCallbacks=countCallbacks+NumOfBatches
+        countCallbacks = countCallbacks + NumOfBatches
         return false
       }
       symbol.token0Contract = new Web3.eth.Contract(ERC20ABI, symbol.token0Address)
@@ -130,12 +131,40 @@ const tokenSymbols = async (Web3, activePoolsArray, LPContractsArray) => {
   return symbolsArray
 }
 
+const setWithExpiry = (key, value, ttl) => {
+  const now = new Date()
+  const item = {
+    value: value,
+    expiry: now.getTime() + ttl,
+  }
+  localStorage.setItem(key, JSON.stringify(item))
+}
+
+const getWithExpiry = (key) => {
+  const itemStr = localStorage.getItem(key)
+  if (!itemStr) {
+    return null
+  }
+  const item = JSON.parse(itemStr)
+  const now = new Date()
+  if (now.getTime() > item.expiry) {
+    localStorage.removeItem(key)
+    return null
+  }
+  return item.value
+}
 const coinGecko = async (symbolsArray) => {
   const url = new URL('https://api.coingecko.com/api/v3/coins/list')
   const url2 = new URL('https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd&ids=<id1>,<id2>')
-  const fetchResponsePromise = await fetch(url)
-  const list = JSON.parse(await fetchResponsePromise.text())
   var idsString = ''
+  let list = getWithExpiry('list')
+  let idPriceData = getWithExpiry('idPriceData')
+  if (list === null) {
+    let fetchResponsePromise = await fetch(url)
+    list = JSON.parse(await fetchResponsePromise.text())
+    setWithExpiry('list', list, 60000)
+  }
+
 
   symbolsArray.map((symbol, mapIndex) => {
     if (symbol.token0Address === undefined) {
@@ -158,22 +187,24 @@ const coinGecko = async (symbolsArray) => {
     return null
   })
 
-  url2.searchParams.set('ids', idsString)
-  const fetchResponsePromise2 = await fetch(url2)
-  const idPriceData = JSON.parse(await fetchResponsePromise2.text())
+  if (idPriceData === null) {
+    url2.searchParams.set('ids', idsString)
+    let fetchResponsePromise2 = await fetch(url2)
+    idPriceData = JSON.parse(await fetchResponsePromise2.text())
+    setWithExpiry('idPriceData', idPriceData, 60000)
+  }
 
-  symbolsArray.map((obj,index) => {
+  symbolsArray.map((obj, index) => {
     if (obj.token0Address === undefined) {
       return false
     }
-    if(idPriceData[obj.symbol0Id]!==undefined){
+    if (idPriceData[obj.symbol0Id] !== undefined) {
       obj.token0Price = Object.values(idPriceData[obj.symbol0Id])[0]
     }
-    if(idPriceData[obj.symbol1Id]!==undefined){
+    if (idPriceData[obj.symbol1Id] !== undefined) {
       obj.token1Price = Object.values(idPriceData[obj.symbol1Id])[0]
     }
-    // obj.token0Price = idPriceData[obj.symbol0Id]
-    // obj.token1Price = idPriceData[obj.symbol1Id]
+    return null
   })
 }
 
@@ -181,44 +212,77 @@ const calcTVL = async (symbolsArray, LPContractsArray) => {
   const Web3 = new web3('https://bsc-dataseed.binance.org/');
   const batch = new Web3.BatchRequest()
   let countCallbacks = 0
-  const NumOfBatches=2
+  const NumOfBatches = 2
 
   const batcher = () => new Promise(resolve => {
-    symbolsArray.map((symbol,index) => {
+    symbolsArray.map((symbol, index) => {
       if (symbol.token0Address === undefined) {
-        countCallbacks=countCallbacks+NumOfBatches
+        countCallbacks = countCallbacks + NumOfBatches
         return false
       }
       batch.add(LPContractsArray[index].methods.getReserves().call.request({ from: symbol.LPAddress }, (error, result) => {
         countCallbacks++
-        symbol.reserve0=result[0]
-        symbol.reserve1=result[1]
+        symbol.reserve0 = result[0]
+        symbol.reserve1 = result[1]
         if (countCallbacks === (symbolsArray.length * NumOfBatches)) {
           resolve()
         }
       }))
       batch.add(LPContractsArray[index].methods.totalSupply().call.request({ from: symbol.LPAddress }, (error, result) => {
         countCallbacks++
-        symbol.totalSupply=result
-        if (countCallbacks === (symbolsArray.length*NumOfBatches)) {
+        symbol.totalSupply = result
+        if (countCallbacks === (symbolsArray.length * NumOfBatches)) {
           resolve()
         }
       }))
+      return null
     })
     batch.execute();
   })
 
   await batcher()
 
-  symbolsArray.map((obj,index)=>{
+  symbolsArray.map((obj, index) => {
     if (obj.token0Address === undefined) {
       return false
     }
-    obj.tvl=((obj.reserve0 * obj.token0Price) + (obj.reserve1 * obj.token1Price)) / obj.totalSupply
+    obj.tvl =Math.round(((obj.reserve0 * obj.token0Price) + (obj.reserve1 * obj.token1Price)) / obj.totalSupply)
     if (isNaN(obj.tvl)) {
-      obj.tvl=undefined
+      obj.tvl = undefined
     }
+    return null
   })
+}
+
+const calcAPR = async (activePoolsArray, LPContractsArray) => {
+  const Web3 = new web3('https://bsc-dataseed.binance.org/');
+  const url2 = new URL('https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd&ids=pancakeswap-token')
+  const batch = new Web3.BatchRequest()
+  var BN = web3.utils.BN
+  const fetchResponsePromise2 = await fetch(url2)
+  const rewardTokenPrice = Object.values(JSON.parse(await fetchResponsePromise2.text())['pancakeswap-token'])[0]
+  // console.log(Object.values(cakePrice['pancakeswap-token'])[0])
+  let countCallbacks = 0
+
+  // let testing=await LPContractsArray[15].methods.balanceOf(masterChefAddress).call()
+  // console.log(testing)
+  const batcher = () => new Promise(resolve => {
+    activePoolsArray.map((pool, index) => {
+      batch.add(LPContractsArray[index].methods.balanceOf(masterChefAddress).call.request({ from: pool.lpTokenAddress }, (error, result) => {
+        countCallbacks++
+        pool.totalStakedValue = new BN(result).mul(new BN(rewardTokenPrice))
+        pool.rewardPerBlockValue = pool.rewardPerBlock * rewardTokenPrice
+        pool.rewardPerShare = new BN(pool.rewardPerBlockValue).mul(new BN(pool.allocPoint).mul(new BN(10000000)).div(new BN(pool.totalAllocPoint))).div(pool.totalStakedValue)
+        pool.apr = pool.rewardPerShare.mul(new BN(BLOCKS_PER_YEAR*100)).toNumber()
+        if (countCallbacks === (activePoolsArray.length)) {
+          resolve()
+        }
+      }))
+      return null
+    })
+    batch.execute();
+  })
+  await batcher()
 }
 
 const loadBlockchainData = async () => {
@@ -239,6 +303,7 @@ const loadBlockchainData = async () => {
   const symbolsArray = await tokenSymbols(Web3, activePoolsArray, LPContractsArray)
   await coinGecko(symbolsArray, LPContractsArray)
   await calcTVL(symbolsArray, LPContractsArray)
+  await calcAPR(activePoolsArray, LPContractsArray)
   console.log(activePoolsArray)
   console.log(symbolsArray)
   return [poolLength, activePoolsArray, symbolsArray]

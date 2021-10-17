@@ -17,7 +17,7 @@ const ActivePoolsComp = (props) => {// or props.title
                 <TableRow key={pool.lpTokenAddress}>
                     <TableCell>{i}</TableCell>
                     <TableCell component='th' >{pool.lpTokenAddress}</TableCell>
-                    <TableCell align='center'>{pool.reward}</TableCell>
+                    <TableCell align='center'>{pool.rewardPerBlock}</TableCell>
                     <TableCell align='center'>{pool.rewardPerBlockPercent}%</TableCell>
                 </TableRow>
             ))
@@ -31,7 +31,7 @@ const ActivePoolsComp = (props) => {// or props.title
                     <TableHead>
                         <TableRow>
                             <TableCell>#</TableCell>
-                            <TableCell>lpTokenAddress</TableCell>
+                            <TableCell>LPTokenAddress</TableCell>
                             <TableCell align='center'>reward</TableCell>
                             <TableCell align='center'>reward_per_block%</TableCell>
                         </TableRow>

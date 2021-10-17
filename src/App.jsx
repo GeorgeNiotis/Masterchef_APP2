@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import ActivePoolsComp from './components/ActivePools.jsx'
 import SymbolsArrayComp from './components/SymbolsArray.jsx'
+import TvlAprTable from './components/TvlAprTable.jsx';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
@@ -25,6 +26,7 @@ function App() {
       </AppBar>
       <ActivePoolsComp array={pools} />
       <SymbolsArrayComp array={pools} />
+      <TvlAprTable array={pools} />
     </div>
   );
 }

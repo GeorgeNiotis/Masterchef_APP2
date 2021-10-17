@@ -6,21 +6,21 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 
-const SymbolsArrayComp = (props) => {// or props.title
+const TvlAprTable = (props) => {// or props.array
     const tableFn = () => {
         if (props.array === undefined) {
             return <TableRow key={0}>
                 <TableCell>Loading...</TableCell>
             </TableRow>
         } else {
-            return props.array[2].map((pool, i) => (
+            return props.array[2].map((pool, index) => (
                 <TableRow
                     key={pool.LPAddress}
                 >
-                    <TableCell>{i}</TableCell>
+                    <TableCell>{index}</TableCell>
                     <TableCell component='th' >{pool.LPAddress}</TableCell>
-                    <TableCell align='center'>{pool.token0Symbol}</TableCell>
-                    <TableCell align='center'>{pool.token1Symbol}</TableCell>
+                    <TableCell align='center'>{pool.tvl}</TableCell>
+                    <TableCell align='center'>{props.array[1][index].apr}%</TableCell>
 
                 </TableRow>
             ))
@@ -28,15 +28,15 @@ const SymbolsArrayComp = (props) => {// or props.title
     }
     return (
         <Paper sx={{ width: '70%', overflow: 'hidden', margin: 'auto', marginTop: '20px', mb: '50px' }}>
-            <h2 align='center'><font color='red'>Symbols array</font></h2>
+            <h2 align='center'><font color='red'>TVL / APR</font></h2>
             <TableContainer sx={{ maxHeight: 550 }}>
                 <Table stickyHeader aria-label='dense sticky table' size='small'>
                     <TableHead>
                         <TableRow>
                             <TableCell>#</TableCell>
                             <TableCell>LPTokenAddress</TableCell>
-                            <TableCell align='center'>token0Symbol</TableCell>
-                            <TableCell align='center'>token1Symbol</TableCell>
+                            <TableCell align='center'>TVL</TableCell>
+                            <TableCell align='center'>APR</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -48,8 +48,8 @@ const SymbolsArrayComp = (props) => {// or props.title
     )
 }
 
-SymbolsArrayComp.defaultProps = {
-    title: 'Default SymbolsArrayComp component!'
+TvlAprTable.defaultProps = {
+    title: 'Default TvlAprTable component!'
 }
 
-export default SymbolsArrayComp
+export default TvlAprTable

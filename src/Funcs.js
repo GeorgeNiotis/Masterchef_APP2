@@ -21,6 +21,7 @@ const activePools = async () => {
   const batch2 = new Web3.BatchRequest()
   let totalAllocPoint
   let countCallbacks = 0
+  var BN=web3.utils.BN
 
   batch.add(MasterChefContract.methods.totalAllocPoint().call.request({ from: masterChefAddress }, (error, result) => { totalAllocPoint = result }))
   const batcher = () => new Promise(resolve => {
@@ -53,6 +54,7 @@ const activePools = async () => {
         pool.totalAllocPoint = totalAllocPoint
         pool.rewardPerBlockPercent = Math.round((pool.allocPoint / totalAllocPoint) * 100)
         pool.rewardPerBlock = pool.cakePerBlock * (pool.allocPoint / totalAllocPoint);
+        pool.rewardPerBlockBase18= new BN(result).mul(new BN(pool.allocPoint).mul(new BN((1e20).toString())).div(new BN(totalAllocPoint)))
         if (countCallbacks === activePoolsArray.length) {
           resolve()
         }
@@ -268,9 +270,13 @@ const calcAPR = async (activePoolsArray, LPContractsArray) => {
       batch.add(LPContractsArray[index].methods.balanceOf(masterChefAddress).call.request({ from: pool.lpTokenAddress }, (error, result) => {
         countCallbacks++
         pool.totalStakedValue = new BN(result).mul(new BN(rewardTokenPrice))
-        pool.rewardPerBlockValue =new BN(pool.rewardPerBlock).mul(new BN(rewardTokenPrice))
-        pool.rewardPerShare = pool.rewardPerBlockValue.mul(new BN(pool.allocPoint).mul(new BN(10000000)).div(new BN(pool.totalAllocPoint))).div(pool.totalStakedValue)
-        pool.apr = pool.rewardPerShare.mul(new BN(BLOCKS_PER_YEAR*100)).toNumber()
+        pool.rewardPerBlockValue =pool.rewardPerBlockBase18.mul(new BN(rewardTokenPrice))
+        // pool.rewardPerShare = pool.rewardPerBlockValue.mul(new BN(pool.allocPoint).div(new BN(pool.allocPoint)))
+        pool.rewardPerShare=pool.rewardPerBlockValue.mul(new BN(pool.allocPoint))
+        // console.log(index,pool.rewardPerBlockValue)//<-- until here everything ok
+        pool.rewardPerShare=pool.rewardPerShare.div(new BN(pool.totalAllocPoint).mul(pool.totalStakedValue))
+        console.log(pool.rewardPerShare.mul(new BN(BLOCKS_PER_YEAR)).mul(new BN(100)))
+        // pool.apr = pool.rewardPerShare.mul(new BN(BLOCKS_PER_YEAR)).mul(new BN(100)).toNumber()/1e20
         if (countCallbacks === (activePoolsArray.length)) {
           resolve()
         }

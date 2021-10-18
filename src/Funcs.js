@@ -271,12 +271,17 @@ const calcAPR = async (activePoolsArray, LPContractsArray) => {
         countCallbacks++
         pool.totalStakedValue = new BN(result).mul(new BN(rewardTokenPrice))
         pool.rewardPerBlockValue =pool.rewardPerBlockBase18.mul(new BN(rewardTokenPrice))
-        // pool.rewardPerShare = pool.rewardPerBlockValue.mul(new BN(pool.allocPoint).div(new BN(pool.allocPoint)))
-        pool.rewardPerShare=pool.rewardPerBlockValue.mul(new BN(pool.allocPoint))
-        // console.log(index,pool.rewardPerBlockValue)//<-- until here everything ok
-        pool.rewardPerShare=pool.rewardPerShare.div(new BN(pool.totalAllocPoint).mul(pool.totalStakedValue))
-        console.log(pool.rewardPerShare.mul(new BN(BLOCKS_PER_YEAR)).mul(new BN(100)))
+        // pool.rewardPerShare=pool.rewardPerBlockValue.mul(new BN(pool.allocPoint))
+        // pool.rewardPerShare=pool.rewardPerShare.div(new BN(pool.totalAllocPoint).mul(pool.totalStakedValue))
+        // console.log(pool.rewardPerShare.mul(new BN(BLOCKS_PER_YEAR)).mul(new BN(100)).toNumber)
         // pool.apr = pool.rewardPerShare.mul(new BN(BLOCKS_PER_YEAR)).mul(new BN(100)).toNumber()/1e20
+
+
+        pool.rewardPerShare = pool.rewardPerBlockValue.mul(new BN(pool.allocPoint).mul(new BN((1e10).toString())).div(new BN(pool.totalAllocPoint)))
+        pool.rewardPerShare = pool.rewardPerShare.div(pool.totalStakedValue)
+        console.log(pool.rewardPerShare.mul(new BN(BLOCKS_PER_YEAR).mul(new BN(100))))
+        // pool.apr = pool.rewardPerShare.mul(new BN(BLOCKS_PER_YEAR).mul(new BN(100))).toNumber()
+
         if (countCallbacks === (activePoolsArray.length)) {
           resolve()
         }

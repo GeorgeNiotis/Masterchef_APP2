@@ -165,7 +165,6 @@ const coinGecko = async (symbolsArray) => {
     setWithExpiry('list', list, 60000)
   }
 
-
   symbolsArray.map((symbol, mapIndex) => {
     if (symbol.token0Address === undefined) {
       return false
@@ -261,11 +260,8 @@ const calcAPR = async (activePoolsArray, LPContractsArray) => {
   var BN = web3.utils.BN
   const fetchResponsePromise2 = await fetch(url2)
   const rewardTokenPrice = Object.values(JSON.parse(await fetchResponsePromise2.text())['pancakeswap-token'])[0]
-  // console.log(Object.values(cakePrice['pancakeswap-token'])[0])
   let countCallbacks = 0
 
-  // let testing=await LPContractsArray[15].methods.balanceOf(masterChefAddress).call()
-  // console.log(testing)
   const batcher = () => new Promise(resolve => {
     activePoolsArray.map((pool, index) => {
       batch.add(LPContractsArray[index].methods.balanceOf(masterChefAddress).call.request({ from: pool.lpTokenAddress }, (error, result) => {

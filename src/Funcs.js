@@ -264,24 +264,21 @@ const calcAPR = async (activePoolsArray, LPContractsArray) => {
   const fetchResponsePromise2 = await fetch(url2)
   const rewardTokenPrice = Object.values(JSON.parse(await fetchResponsePromise2.text())['pancakeswap-token'])[0]
   let countCallbacks = 0
-
+  
   const batcher = () => new Promise(resolve => {
     activePoolsArray.map((pool, index) => {
       batch.add(LPContractsArray[index].methods.balanceOf(masterChefAddress).call.request({ from: pool.lpTokenAddress }, (error, result) => {
         countCallbacks++
         pool.totalStakedValue = new BN(result).mul(new BN(rewardTokenPrice))
         pool.rewardPerBlockValue =pool.rewardPerBlockBase18.mul(new BN(rewardTokenPrice))
-        // pool.rewardPerShare=pool.rewardPerBlockValue.mul(new BN(pool.allocPoint))
-        // pool.rewardPerShare=pool.rewardPerShare.div(new BN(pool.totalAllocPoint).mul(pool.totalStakedValue))
-        // console.log(pool.rewardPerShare.mul(new BN(BLOCKS_PER_YEAR)).mul(new BN(100)).toNumber)
-        // pool.apr = pool.rewardPerShare.mul(new BN(BLOCKS_PER_YEAR)).mul(new BN(100)).toNumber()/1e20
-
-
         pool.rewardPerShare = pool.rewardPerBlockValue.mul(new BN(pool.allocPoint).mul(new BN((1e10).toString())).div(new BN(pool.totalAllocPoint)))
         pool.rewardPerShare = pool.rewardPerShare.div(pool.totalStakedValue)
-        console.log(pool.rewardPerShare.mul(new BN(BLOCKS_PER_YEAR).mul(new BN(100))))
-        // pool.apr = pool.rewardPerShare.mul(new BN(BLOCKS_PER_YEAR).mul(new BN(100))).toNumber()
-
+        try {
+          pool.apr = pool.rewardPerShare.mul(new BN(BLOCKS_PER_YEAR).mul(new BN(100))).toString()/1e30
+        } catch (error) {
+          console.log(index,error)
+          console.log(pool.rewardPerShare.mul(new BN(BLOCKS_PER_YEAR).mul(new BN(100))))
+        }
         if (countCallbacks === (activePoolsArray.length)) {
           resolve()
         }
@@ -312,8 +309,6 @@ const loadBlockchainData = async () => {
   await coinGecko(symbolsArray, LPContractsArray)
   await calcTVL(symbolsArray, LPContractsArray)
   await calcAPR(activePoolsArray, LPContractsArray)
-  console.log(activePoolsArray)
-  console.log(symbolsArray)
   return [poolLength, activePoolsArray, symbolsArray]
 }
 

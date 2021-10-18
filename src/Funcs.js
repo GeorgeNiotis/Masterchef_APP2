@@ -248,7 +248,10 @@ const calcTVL = async (symbolsArray, LPContractsArray) => {
     if (obj.token0Address === undefined) {
       return false
     }
-    obj.tvl =new BN(obj.reserve0).mul(new BN (obj.token0Price)).add(new BN(obj.reserve1).mul(new BN(obj.token1Price))).div(new BN(obj.totalSupply)).toNumber()
+    let a=new BN(obj.reserve0).mul(new BN (obj.token0Price))
+    let b=new BN(obj.reserve1).mul(new BN(obj.token1Price))
+    let add=a.add(b)
+    obj.tvl=add.div(new BN(obj.totalSupply)).toNumber()
     if (isNaN(obj.tvl)) {
       obj.tvl = undefined
     }
@@ -273,12 +276,7 @@ const calcAPR = async (activePoolsArray, LPContractsArray) => {
         pool.rewardPerBlockValue =pool.rewardPerBlockBase18.mul(new BN(rewardTokenPrice))
         pool.rewardPerShare = pool.rewardPerBlockValue.mul(new BN(pool.allocPoint).mul(new BN((1e10).toString())).div(new BN(pool.totalAllocPoint)))
         pool.rewardPerShare = pool.rewardPerShare.div(pool.totalStakedValue)
-        try {
-          pool.apr = pool.rewardPerShare.mul(new BN(BLOCKS_PER_YEAR).mul(new BN(100))).toString()/1e30
-        } catch (error) {
-          console.log(index,error)
-          console.log(pool.rewardPerShare.mul(new BN(BLOCKS_PER_YEAR).mul(new BN(100))))
-        }
+        pool.apr = pool.rewardPerShare.mul(new BN(BLOCKS_PER_YEAR).mul(new BN(100))).toString()/1e30
         if (countCallbacks === (activePoolsArray.length)) {
           resolve()
         }

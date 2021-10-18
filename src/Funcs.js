@@ -212,6 +212,7 @@ const calcTVL = async (symbolsArray, LPContractsArray) => {
   const batch = new Web3.BatchRequest()
   let countCallbacks = 0
   const NumOfBatches = 2
+  var BN = web3.utils.BN
 
   const batcher = () => new Promise(resolve => {
     symbolsArray.map((symbol, index) => {
@@ -245,7 +246,7 @@ const calcTVL = async (symbolsArray, LPContractsArray) => {
     if (obj.token0Address === undefined) {
       return false
     }
-    obj.tvl =Math.round(((obj.reserve0 * obj.token0Price) + (obj.reserve1 * obj.token1Price)) / obj.totalSupply)
+    obj.tvl =new BN(obj.reserve0).mul(new BN (obj.token0Price)).add(new BN(obj.reserve1).mul(new BN(obj.token1Price))).div(new BN(obj.totalSupply)).toNumber()
     if (isNaN(obj.tvl)) {
       obj.tvl = undefined
     }
@@ -267,8 +268,8 @@ const calcAPR = async (activePoolsArray, LPContractsArray) => {
       batch.add(LPContractsArray[index].methods.balanceOf(masterChefAddress).call.request({ from: pool.lpTokenAddress }, (error, result) => {
         countCallbacks++
         pool.totalStakedValue = new BN(result).mul(new BN(rewardTokenPrice))
-        pool.rewardPerBlockValue = pool.rewardPerBlock * rewardTokenPrice
-        pool.rewardPerShare = new BN(pool.rewardPerBlockValue).mul(new BN(pool.allocPoint).mul(new BN(10000000)).div(new BN(pool.totalAllocPoint))).div(pool.totalStakedValue)
+        pool.rewardPerBlockValue =new BN(pool.rewardPerBlock).mul(new BN(rewardTokenPrice))
+        pool.rewardPerShare = pool.rewardPerBlockValue.mul(new BN(pool.allocPoint).mul(new BN(10000000)).div(new BN(pool.totalAllocPoint))).div(pool.totalStakedValue)
         pool.apr = pool.rewardPerShare.mul(new BN(BLOCKS_PER_YEAR*100)).toNumber()
         if (countCallbacks === (activePoolsArray.length)) {
           resolve()

@@ -14,14 +14,11 @@ const SymbolsArrayComp = (props) => {// or props.title
             </TableRow>
         } else {
             return props.array[2].map((pool, i) => (
-                <TableRow
-                    key={pool.LPAddress}
-                >
+                <TableRow key={pool.LPAddress}>
                     <TableCell>{i}</TableCell>
                     <TableCell component='th' >{pool.LPAddress}</TableCell>
                     <TableCell align='center'>{pool.token0Symbol}</TableCell>
                     <TableCell align='center'>{pool.token1Symbol}</TableCell>
-
                 </TableRow>
             ))
         }

@@ -13,17 +13,19 @@ const TvlAprTable = (props) => {// or props.array
                 <TableCell>Loading...</TableCell>
             </TableRow>
         } else {
-            return props.array[2].map((pool, index) => (
-                <TableRow
-                    key={pool.LPAddress}
-                >
+            return props.array[2].map((pool, index) => {
+                if (pool.tvl) {
+                    pool.tvl=pool.tvl.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                }
+                return(
+                <TableRow key={pool.LPAddress}>
                     <TableCell>{index}</TableCell>
-                    <TableCell component='th' >{pool.LPAddress}</TableCell>
+                    <TableCell component='th' >{pool.token0Symbol}-{pool.token1Symbol}</TableCell>
                     <TableCell align='center'>{pool.tvl}</TableCell>
                     <TableCell align='center'>{props.array[1][index].apr}%</TableCell>
-
                 </TableRow>
-            ))
+                )
+            })
         }
     }
     return (
@@ -34,7 +36,7 @@ const TvlAprTable = (props) => {// or props.array
                     <TableHead>
                         <TableRow>
                             <TableCell>#</TableCell>
-                            <TableCell>LPTokenAddress</TableCell>
+                            <TableCell>LPTokenPair</TableCell>
                             <TableCell align='center'>TVL</TableCell>
                             <TableCell align='center'>APR</TableCell>
                         </TableRow>

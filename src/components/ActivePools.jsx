@@ -32,7 +32,7 @@ const ActivePoolsComp = (props) => {// or props.title
                         <TableRow>
                             <TableCell>#</TableCell>
                             <TableCell>LPTokenAddress</TableCell>
-                            <TableCell align='center'>reward</TableCell>
+                            <TableCell align='center'>rewardPerBlock</TableCell>
                             <TableCell align='center'>reward_per_block%</TableCell>
                         </TableRow>
                     </TableHead>
